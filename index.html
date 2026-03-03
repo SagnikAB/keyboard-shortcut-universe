@@ -1,99 +1,13 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Keyboard Shortcut Universe</title>
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="data:," />
-
-    <style>
-      body {
-        margin: 0;
-        overflow: hidden;
-        background: #050505;
-        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-        color: white;
-      }
-
-      #hero {
-        position: absolute;
-        top: 30px;
-        width: 100%;
-        text-align: center;
-        z-index: 10;
-      }
-
-      #hero h1 {
-        margin: 0;
-        font-size: 34px;
-        font-weight: 600;
-      }
-
-      #hero p {
-        margin-top: 8px;
-        font-size: 15px;
-        opacity: 0.65;
-      }
-
-      #panel {
-        position: absolute;
-        bottom: 40px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 440px;
-        background: rgba(0, 0, 0, 0.8);
-        border: 1px solid rgba(0, 255, 255, 0.5);
-        border-radius: 14px;
-        padding: 24px;
-        backdrop-filter: blur(12px);
-        z-index: 10;
-      }
-
-      #combo {
-        font-size: 22px;
-        color: #00ffff;
-        font-weight: 600;
-      }
-
-      #desc {
-        margin-top: 10px;
-        font-size: 14px;
-        opacity: 0.85;
-      }
-
-      #hint {
-        margin-top: 14px;
-        font-size: 12px;
-        opacity: 0.5;
-      }
-
-      .key-label {
-        position: absolute;
-        color: white;
-        font-weight: 600;
-        font-size: 14px;
-        pointer-events: none;
-        transform: translate(-50%, -50%);
-        z-index: 5;
-      }
-    </style>
-
-    <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+    <title>keyboard-universe</title>
   </head>
   <body>
-    <div id="hero">
-      <h1>Keyboard Shortcut Universe</h1>
-      <p>Explore essential shortcuts in an interactive 3D experience</p>
-    </div>
-
-    <div id="panel">
-      <div id="combo">Click a key</div>
-      <div id="desc">Hover or click a key to see its shortcut.</div>
-      <div id="hint">
-        Tip: You can also press the real key on your keyboard.
-      </div>
-    </div>
-
-    <script src="script.js"></script>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

@@ -1,7 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
+html,
 body {
   margin: 0;
+  padding: 0;
+  background: black;
+  font-family: system-ui, sans-serif;
+}
+
+canvas {
+  display: block;
 }

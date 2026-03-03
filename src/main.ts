@@ -39,11 +39,11 @@ const shortcuts: Shortcut[] = [
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
 app.innerHTML = `
-<div class="relative min-h-screen bg-black text-white overflow-hidden">
+<div class="relative min-h-screen bg-black text-white overflow-hidden flex flex-col">
 
   <canvas id="bg" class="absolute inset-0 -z-10"></canvas>
 
-  <div class="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-3 gap-10">
+  <div class="flex-1 max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-3 gap-10">
 
     <div class="lg:col-span-2 flex flex-col items-center">
 
@@ -90,14 +90,28 @@ app.innerHTML = `
     </div>
 
   </div>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-cyan-400/20 bg-black/60 backdrop-blur text-center py-6 text-sm text-gray-400">
+    <p class="mb-3">© Author — <span class="text-cyan-400">Sagnik Dam</span></p>
+
+    <div class="flex flex-wrap justify-center gap-6 text-gray-500">
+      <a href="https://github.com/SagnikAB" target="_blank" class="hover:text-cyan-400 transition">GitHub</a>
+      <a href="https://www.instagram.com/s4g.n1k_/" target="_blank" class="hover:text-pink-400 transition">Instagram</a>
+      <a href="https://www.linkedin.com/in/sagnik-dam-b33bb3322" target="_blank" class="hover:text-blue-400 transition">LinkedIn</a>
+      <a href="https://x.com/29Sagnik" target="_blank" class="hover:text-gray-200 transition">X</a>
+      <a href="https://portfolio-frv3.vercel.app/" target="_blank" class="hover:text-green-400 transition">Portfolio</a>
+    </div>
+  </footer>
+
 </div>
 `;
 
 /* ======================================================
-   FULL KEYBOARD LAYOUT
+   FULL KEYBOARD
 ====================================================== */
 
-const keyboardLayout = [
+const layout = [
   [
     "Escape",
     "F1",
@@ -137,7 +151,7 @@ const keyboardLayout = [
 
 const keyboardDiv = document.getElementById("keyboard")!;
 
-keyboardLayout.forEach((row) => {
+layout.forEach((row) => {
   const rowDiv = document.createElement("div");
   rowDiv.className = "flex justify-center gap-2";
 
@@ -157,48 +171,41 @@ keyboardLayout.forEach((row) => {
 });
 
 /* ======================================================
-   SHORTCUT LOGIC
+   SHORTCUT DETECTION
 ====================================================== */
 
 let activeKeys = new Set<string>();
 let historyData: Shortcut[] = [];
 
-function normalizeCombo(keys: string[]) {
+function normalize(keys: string[]) {
   return [...keys].sort().join("+");
 }
 
-function matchShortcut() {
-  const current = normalizeCombo(Array.from(activeKeys));
-
-  for (const shortcut of shortcuts) {
-    if (normalizeCombo(shortcut.keys) === current) {
-      return shortcut;
-    }
-  }
-
-  return null;
+function findMatch() {
+  const combo = normalize(Array.from(activeKeys));
+  return shortcuts.find((s) => normalize(s.keys) === combo) || null;
 }
 
 window.addEventListener("keydown", (e) => {
   const key = e.key.toLowerCase();
   activeKeys.add(key);
+  highlight(key);
 
-  highlightKey(key);
-
-  const match = matchShortcut();
+  const match = findMatch();
   if (match) {
     createPulse(match.category);
-    addHistory(match);
+    historyData.unshift(match);
+    renderHistory();
   }
 });
 
 window.addEventListener("keyup", (e) => {
   const key = e.key.toLowerCase();
   activeKeys.delete(key);
-  unhighlightKey(key);
+  unhighlight(key);
 });
 
-function highlightKey(key: string) {
+function highlight(key: string) {
   document.querySelectorAll(".key").forEach((el) => {
     if (el.getAttribute("data-key") === key) {
       el.classList.add("bg-cyan-500", "text-black", "scale-110");
@@ -206,7 +213,7 @@ function highlightKey(key: string) {
   });
 }
 
-function unhighlightKey(key: string) {
+function unhighlight(key: string) {
   document.querySelectorAll(".key").forEach((el) => {
     if (el.getAttribute("data-key") === key) {
       el.classList.remove("bg-cyan-500", "text-black", "scale-110");
@@ -215,64 +222,48 @@ function unhighlightKey(key: string) {
 }
 
 /* ======================================================
-   HISTORY SYSTEM
+   HISTORY PANEL
 ====================================================== */
 
-const memoryContainer = document.getElementById("memory")!;
-const historyCount = document.getElementById("historyCount")!;
-const emptyState = document.getElementById("emptyState")!;
+const memory = document.getElementById("memory")!;
+const count = document.getElementById("historyCount")!;
+const empty = document.getElementById("emptyState")!;
 const clearBtn = document.getElementById("clearHistory")!;
 const exportBtn = document.getElementById("exportHistory")!;
 const searchInput = document.getElementById(
   "searchHistory",
 ) as HTMLInputElement;
 
-function updateCount() {
-  historyCount.textContent = `${historyData.length} shortcuts used`;
-}
-
-function addHistory(shortcut: Shortcut) {
-  historyData.unshift(shortcut);
-  renderHistory();
-}
-
 function renderHistory() {
-  memoryContainer.innerHTML = "";
+  memory.innerHTML = "";
 
   const filtered = historyData.filter((s) =>
     s.description.toLowerCase().includes(searchInput.value.toLowerCase()),
   );
 
   if (filtered.length === 0) {
-    emptyState.style.display = "block";
-    return;
+    empty.style.display = "block";
+  } else {
+    empty.style.display = "none";
   }
 
-  emptyState.style.display = "none";
-
-  filtered.forEach((shortcut) => {
+  filtered.forEach((s) => {
     const card = document.createElement("div");
-    card.className = `
-      p-4 rounded-xl border
-      ${categoryColor(shortcut.category)}
-      bg-black/40 backdrop-blur
-    `;
-
+    card.className = `p-4 rounded-xl border ${color(s.category)} bg-black/40`;
     card.innerHTML = `
-      <h3 class="font-semibold">${shortcut.keys.join(" + ")}</h3>
-      <p class="text-sm mt-1">${shortcut.description}</p>
-      <p class="text-xs mt-2 opacity-70">${shortcut.category}</p>
+      <h3 class="font-semibold">${s.keys.join(" + ")}</h3>
+      <p class="text-sm mt-1">${s.description}</p>
+      <p class="text-xs mt-2 opacity-70">${s.category}</p>
     `;
-
-    memoryContainer.appendChild(card);
+    memory.appendChild(card);
   });
 
-  updateCount();
+  count.textContent = `${historyData.length} shortcuts used`;
 }
 
-function categoryColor(category: string) {
-  if (category === "File") return "border-blue-500";
-  if (category === "Edit") return "border-green-500";
+function color(cat: string) {
+  if (cat === "File") return "border-blue-500";
+  if (cat === "Edit") return "border-green-500";
   return "border-red-500";
 }
 
@@ -306,29 +297,29 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   1000,
 );
-
 const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+
 renderer.setSize(window.innerWidth, window.innerHeight);
 camera.position.z = 6;
 
-const particlesGeo = new THREE.BufferGeometry();
-const particlesCount = 1500;
-const posArray = new Float32Array(particlesCount * 3);
+const geo = new THREE.BufferGeometry();
+const countParticles = 1500;
+const positions = new Float32Array(countParticles * 3);
 
-for (let i = 0; i < particlesCount * 3; i++) {
-  posArray[i] = (Math.random() - 0.5) * 15;
+for (let i = 0; i < countParticles * 3; i++) {
+  positions[i] = (Math.random() - 0.5) * 15;
 }
 
-particlesGeo.setAttribute("position", new THREE.BufferAttribute(posArray, 3));
+geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
 
-const particlesMat = new THREE.PointsMaterial({
+const mat = new THREE.PointsMaterial({
   size: 0.02,
   color: 0x00ffff,
   transparent: true,
   opacity: 0.6,
 });
 
-const particles = new THREE.Points(particlesGeo, particlesMat);
+const particles = new THREE.Points(geo, mat);
 scene.add(particles);
 
 function createPulse(category: string) {
@@ -350,29 +341,27 @@ function createPulse(category: string) {
 
   let scale = 1;
 
-  const animatePulse = () => {
+  const animate = () => {
     scale += 0.05;
     ring.scale.set(scale, scale, scale);
     ring.material.opacity -= 0.02;
-
     if (ring.material.opacity <= 0) {
       scene.remove(ring);
       return;
     }
-
-    requestAnimationFrame(animatePulse);
+    requestAnimationFrame(animate);
   };
 
-  animatePulse();
+  animate();
 }
 
-function animate() {
-  requestAnimationFrame(animate);
+function animateScene() {
+  requestAnimationFrame(animateScene);
   particles.rotation.y += 0.0005;
   renderer.render(scene, camera);
 }
 
-animate();
+animateScene();
 
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;

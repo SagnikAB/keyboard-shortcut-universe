@@ -1,169 +1,305 @@
 import "./style.css";
 import * as THREE from "three";
 
-/* ===========================
+/* ======================================================
    SHORTCUT DATABASE
-=========================== */
+====================================================== */
 
 type Shortcut = {
-  combo: string;
+  keys: string[];
   description: string;
-  category: string;
+  category: "File" | "Edit" | "System";
 };
 
 const shortcuts: Shortcut[] = [
-  { combo: "Control+s", description: "Save file", category: "File" },
-  { combo: "Control+o", description: "Open file", category: "File" },
-  { combo: "Control+p", description: "Print", category: "File" },
-  { combo: "Control+c", description: "Copy", category: "Edit" },
-  { combo: "Control+v", description: "Paste", category: "Edit" },
-  { combo: "Control+x", description: "Cut", category: "Edit" },
-  { combo: "Control+z", description: "Undo", category: "Edit" },
-  { combo: "Control+y", description: "Redo", category: "Edit" },
-  { combo: "Alt+Tab", description: "Switch Applications", category: "System" },
+  { keys: ["control", "s"], description: "Save File", category: "File" },
+  { keys: ["control", "o"], description: "Open File", category: "File" },
+  { keys: ["control", "p"], description: "Print", category: "File" },
+  { keys: ["control", "c"], description: "Copy", category: "Edit" },
+  { keys: ["control", "v"], description: "Paste", category: "Edit" },
+  { keys: ["control", "x"], description: "Cut", category: "Edit" },
+  { keys: ["control", "z"], description: "Undo", category: "Edit" },
+  { keys: ["control", "y"], description: "Redo", category: "Edit" },
   {
-    combo: "Control+Shift+Escape",
-    description: "Open Task Manager",
+    keys: ["alt", "tab"],
+    description: "Switch Applications",
+    category: "System",
+  },
+  {
+    keys: ["control", "shift", "escape"],
+    description: "Task Manager",
     category: "System",
   },
 ];
 
-/* ===========================
+/* ======================================================
    UI STRUCTURE
-=========================== */
+====================================================== */
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 
 app.innerHTML = `
-<div class="relative min-h-screen bg-black text-white overflow-hidden flex flex-col items-center justify-center px-6">
+<div class="relative min-h-screen bg-black text-white overflow-hidden">
 
   <canvas id="bg" class="absolute inset-0 -z-10"></canvas>
 
-  <div class="text-center mb-14">
-    <h1 class="text-5xl font-bold tracking-wide bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-      Input / Echo
-    </h1>
-    <p class="text-gray-400 mt-4 text-lg">
-      Every shortcut leaves a trace in digital space
-    </p>
+  <div class="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-3 gap-10">
+
+    <div class="lg:col-span-2 flex flex-col items-center">
+
+      <div class="text-center mb-12">
+        <h1 class="text-5xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+          Input / Echo
+        </h1>
+        <p class="text-gray-400 mt-4">
+          Interactive Keyboard Shortcut Visualizer
+        </p>
+      </div>
+
+      <div id="keyboard" class="space-y-2"></div>
+    </div>
+
+    <div class="bg-white/5 backdrop-blur-lg border border-cyan-400/30 rounded-2xl p-6">
+
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold text-cyan-400">Shortcut History</h2>
+        <div class="flex gap-3">
+          <button id="exportHistory" class="text-sm text-gray-400 hover:text-green-400">
+            Export
+          </button>
+          <button id="clearHistory" class="text-sm text-gray-400 hover:text-red-400">
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <input
+        id="searchHistory"
+        placeholder="Search shortcuts..."
+        class="w-full mb-4 px-3 py-2 rounded bg-black/40 border border-gray-700 text-sm"
+      />
+
+      <p id="historyCount" class="text-xs text-gray-500 mb-4">0 shortcuts used</p>
+
+      <div id="memory" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2"></div>
+
+      <p id="emptyState" class="text-gray-600 text-sm mt-6 text-center">
+        No shortcuts triggered yet.
+      </p>
+
+    </div>
+
   </div>
-
-  <div id="keyboard" class="space-y-3 mb-12"></div>
-
-  <div id="memory" class="fixed right-6 bottom-6 w-[320px] space-y-4 max-h-[60vh] overflow-y-auto"></div>
-
 </div>
 `;
 
-/* ===========================
-   KEYBOARD UI
-=========================== */
+/* ======================================================
+   FULL KEYBOARD LAYOUT
+====================================================== */
 
-const layout = [
-  ["Control", "Shift", "Alt", "Meta"],
-  ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
-  ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
-  ["Z", "X", "C", "V", "B", "N", "M"],
+const keyboardLayout = [
+  [
+    "Escape",
+    "F1",
+    "F2",
+    "F3",
+    "F4",
+    "F5",
+    "F6",
+    "F7",
+    "F8",
+    "F9",
+    "F10",
+    "F11",
+    "F12",
+  ],
+  [
+    "`",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "0",
+    "-",
+    "=",
+    "Backspace",
+  ],
+  ["Tab", "Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P", "[", "]", "\\"],
+  ["CapsLock", "A", "S", "D", "F", "G", "H", "J", "K", "L", ";", "'", "Enter"],
+  ["Shift", "Z", "X", "C", "V", "B", "N", "M", ",", ".", "/", "Shift"],
+  ["Control", "Meta", "Alt", "Space", "Alt", "Meta", "Control"],
 ];
 
 const keyboardDiv = document.getElementById("keyboard")!;
 
-layout.forEach((row) => {
+keyboardLayout.forEach((row) => {
   const rowDiv = document.createElement("div");
-  rowDiv.className = "flex justify-center gap-3";
+  rowDiv.className = "flex justify-center gap-2";
 
   row.forEach((key) => {
     const keyDiv = document.createElement("div");
     keyDiv.textContent = key;
     keyDiv.className = `
-      key px-5 py-3 bg-gray-900/80 border border-gray-700
-      rounded-lg min-w-[60px] text-center
-      transition-all duration-200 cursor-pointer
-      hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(0,255,255,0.4)]
+      key px-3 py-2 bg-gray-900 border border-gray-700
+      rounded-md min-w-[40px] text-center text-xs
+      transition-all duration-200
     `;
-    keyDiv.setAttribute("data-key", key);
+    keyDiv.setAttribute("data-key", key.toLowerCase());
     rowDiv.appendChild(keyDiv);
   });
 
   keyboardDiv.appendChild(rowDiv);
 });
 
-/* ===========================
-   MEMORY SYSTEM
-=========================== */
-
-const memoryContainer = document.getElementById("memory")!;
-
-function createMemoryCard(shortcut: Shortcut) {
-  const card = document.createElement("div");
-  card.className = `
-    backdrop-blur-md bg-white/5 border border-cyan-400/40
-    rounded-xl p-4 shadow-[0_0_25px_rgba(0,255,255,0.15)]
-    animate-fadeIn
-  `;
-
-  card.innerHTML = `
-    <h3 class="text-cyan-400 font-semibold">${shortcut.combo}</h3>
-    <p class="text-gray-200 text-sm mt-1">${shortcut.description}</p>
-    <p class="text-xs text-gray-500 mt-2">${shortcut.category}</p>
-  `;
-
-  memoryContainer.prepend(card);
-}
-
-/* ===========================
+/* ======================================================
    SHORTCUT LOGIC
-=========================== */
+====================================================== */
 
 let activeKeys = new Set<string>();
+let historyData: Shortcut[] = [];
+
+function normalizeCombo(keys: string[]) {
+  return [...keys].sort().join("+");
+}
+
+function matchShortcut() {
+  const current = normalizeCombo(Array.from(activeKeys));
+
+  for (const shortcut of shortcuts) {
+    if (normalizeCombo(shortcut.keys) === current) {
+      return shortcut;
+    }
+  }
+
+  return null;
+}
 
 window.addEventListener("keydown", (e) => {
-  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  const key = e.key.toLowerCase();
   activeKeys.add(key);
 
-  document.querySelectorAll(".key").forEach((el) => {
-    if (el.getAttribute("data-key")?.toLowerCase() === key.toLowerCase()) {
-      el.classList.add(
-        "bg-cyan-500",
-        "text-black",
-        "scale-110",
-        "shadow-[0_0_20px_rgba(0,255,255,0.8)]",
-      );
-    }
-  });
+  highlightKey(key);
 
-  const combo = Array.from(activeKeys).join("+");
-  const match = shortcuts.find((s) => s.combo === combo);
-
+  const match = matchShortcut();
   if (match) {
-    createPulse();
-    createMemoryCard(match);
+    createPulse(match.category);
+    addHistory(match);
   }
 });
 
 window.addEventListener("keyup", (e) => {
-  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  const key = e.key.toLowerCase();
   activeKeys.delete(key);
-
-  document.querySelectorAll(".key").forEach((el) => {
-    if (el.getAttribute("data-key")?.toLowerCase() === key.toLowerCase()) {
-      el.classList.remove(
-        "bg-cyan-500",
-        "text-black",
-        "scale-110",
-        "shadow-[0_0_20px_rgba(0,255,255,0.8)]",
-      );
-    }
-  });
+  unhighlightKey(key);
 });
 
-/* ===========================
-   THREE.JS INTERACTIVE FIELD
-=========================== */
+function highlightKey(key: string) {
+  document.querySelectorAll(".key").forEach((el) => {
+    if (el.getAttribute("data-key") === key) {
+      el.classList.add("bg-cyan-500", "text-black", "scale-110");
+    }
+  });
+}
+
+function unhighlightKey(key: string) {
+  document.querySelectorAll(".key").forEach((el) => {
+    if (el.getAttribute("data-key") === key) {
+      el.classList.remove("bg-cyan-500", "text-black", "scale-110");
+    }
+  });
+}
+
+/* ======================================================
+   HISTORY SYSTEM
+====================================================== */
+
+const memoryContainer = document.getElementById("memory")!;
+const historyCount = document.getElementById("historyCount")!;
+const emptyState = document.getElementById("emptyState")!;
+const clearBtn = document.getElementById("clearHistory")!;
+const exportBtn = document.getElementById("exportHistory")!;
+const searchInput = document.getElementById(
+  "searchHistory",
+) as HTMLInputElement;
+
+function updateCount() {
+  historyCount.textContent = `${historyData.length} shortcuts used`;
+}
+
+function addHistory(shortcut: Shortcut) {
+  historyData.unshift(shortcut);
+  renderHistory();
+}
+
+function renderHistory() {
+  memoryContainer.innerHTML = "";
+
+  const filtered = historyData.filter((s) =>
+    s.description.toLowerCase().includes(searchInput.value.toLowerCase()),
+  );
+
+  if (filtered.length === 0) {
+    emptyState.style.display = "block";
+    return;
+  }
+
+  emptyState.style.display = "none";
+
+  filtered.forEach((shortcut) => {
+    const card = document.createElement("div");
+    card.className = `
+      p-4 rounded-xl border
+      ${categoryColor(shortcut.category)}
+      bg-black/40 backdrop-blur
+    `;
+
+    card.innerHTML = `
+      <h3 class="font-semibold">${shortcut.keys.join(" + ")}</h3>
+      <p class="text-sm mt-1">${shortcut.description}</p>
+      <p class="text-xs mt-2 opacity-70">${shortcut.category}</p>
+    `;
+
+    memoryContainer.appendChild(card);
+  });
+
+  updateCount();
+}
+
+function categoryColor(category: string) {
+  if (category === "File") return "border-blue-500";
+  if (category === "Edit") return "border-green-500";
+  return "border-red-500";
+}
+
+clearBtn.addEventListener("click", () => {
+  historyData = [];
+  renderHistory();
+});
+
+exportBtn.addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify(historyData, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "shortcut-history.json";
+  a.click();
+});
+
+searchInput.addEventListener("input", renderHistory);
+
+/* ======================================================
+   THREE.JS BACKGROUND
+====================================================== */
 
 const canvas = document.getElementById("bg") as HTMLCanvasElement;
 const scene = new THREE.Scene();
-
 const camera = new THREE.PerspectiveCamera(
   75,
   window.innerWidth / window.innerHeight,
@@ -173,37 +309,37 @@ const camera = new THREE.PerspectiveCamera(
 
 const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-
 camera.position.z = 6;
 
-// PARTICLE FIELD
+const particlesGeo = new THREE.BufferGeometry();
+const particlesCount = 1500;
+const posArray = new Float32Array(particlesCount * 3);
 
-const particleCount = 2000;
-const geometry = new THREE.BufferGeometry();
-const positions = new Float32Array(particleCount * 3);
-
-for (let i = 0; i < particleCount * 3; i++) {
-  positions[i] = (Math.random() - 0.5) * 15;
+for (let i = 0; i < particlesCount * 3; i++) {
+  posArray[i] = (Math.random() - 0.5) * 15;
 }
 
-geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+particlesGeo.setAttribute("position", new THREE.BufferAttribute(posArray, 3));
 
-const material = new THREE.PointsMaterial({
-  size: 0.03,
+const particlesMat = new THREE.PointsMaterial({
+  size: 0.02,
   color: 0x00ffff,
   transparent: true,
   opacity: 0.6,
 });
 
-const particles = new THREE.Points(geometry, material);
+const particles = new THREE.Points(particlesGeo, particlesMat);
 scene.add(particles);
 
-// ENERGY PULSE
+function createPulse(category: string) {
+  let color = 0x00ffff;
+  if (category === "File") color = 0x3b82f6;
+  if (category === "Edit") color = 0x22c55e;
+  if (category === "System") color = 0xef4444;
 
-function createPulse() {
   const ringGeo = new THREE.RingGeometry(0.5, 0.6, 64);
   const ringMat = new THREE.MeshBasicMaterial({
-    color: 0x00ffff,
+    color,
     side: THREE.DoubleSide,
     transparent: true,
     opacity: 0.8,
@@ -214,7 +350,7 @@ function createPulse() {
 
   let scale = 1;
 
-  const pulse = () => {
+  const animatePulse = () => {
     scale += 0.05;
     ring.scale.set(scale, scale, scale);
     ring.material.opacity -= 0.02;
@@ -224,25 +360,15 @@ function createPulse() {
       return;
     }
 
-    requestAnimationFrame(pulse);
+    requestAnimationFrame(animatePulse);
   };
 
-  pulse();
+  animatePulse();
 }
-
-// AMBIENT CAMERA FLOAT
 
 function animate() {
   requestAnimationFrame(animate);
-
-  particles.rotation.y += 0.0007;
-  particles.rotation.x += 0.0002;
-
-  camera.position.x = Math.sin(Date.now() * 0.0003) * 0.3;
-  camera.position.y = Math.cos(Date.now() * 0.0002) * 0.3;
-
-  camera.lookAt(scene.position);
-
+  particles.rotation.y += 0.0005;
   renderer.render(scene, camera);
 }
 
